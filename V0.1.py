@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 
 # Créer l'application Dash avec un thème Bootstrap
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+server = app.server
 
 # Définir une fonction pour déterminer la stratégie
 def define_strategy(row):
