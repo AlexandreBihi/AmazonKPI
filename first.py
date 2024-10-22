@@ -44,7 +44,8 @@ app.layout = dbc.Container([
             html.Div(id='kpi-display', style={'display': 'flex', 'justify-content': 'space-around', 'margin-bottom': '20px'}),
             dcc.Graph(id='funnel-chart'),
             html.Div(id='clicks_kpi', style={'display': 'flex', 'justify-content': 'flex-start', 'margin-bottom': '20px'}),
-            html.Div(id='kpi_section'), 
+            html.Div(id='kpi_section'),
+            dcc.Graph(id='delta-chart')
         ])
     ]),
     dcc.Store(id='stored-data')
@@ -107,24 +108,26 @@ def update_table(contents):
 @app.callback(
     [Output('kpi-display', 'children'),
      Output('funnel-chart', 'figure'),
-     Output('kpi_section', 'children')],
+     Output('kpi_section', 'children'),
+     Output('delta-chart', 'figure')],
     [Input('query-dropdown', 'value'),
      Input('date-dropdown', 'value'),
      Input('stored-data', 'data')]
 )
 def update_kpi_funnel(selected_query, selected_date, data):
     if selected_query is None or selected_date is None or data is None:
-        return None, go.Figure(), None
+        return None, go.Figure(), None, go.Figure()
 
     df = pd.DataFrame(data)
 
     # Filtrer les données en fonction de la Search Query sélectionnée et de la date
     df['Reporting Date'] = pd.to_datetime(df['Reporting Date'], errors='coerce')
     filtered_df = df[(df['Search Query'] == selected_query) & (df['Reporting Date'] == pd.to_datetime(selected_date))]
+    df_graph = df[(df['Search Query'] == selected_query)]
 
     # Si le DataFrame filtré est vide, retourner une valeur par défaut
     if filtered_df.empty:
-        return None, go.Figure(), None
+        return None, go.Figure(), None, go.Figure()
 
     filtered_df = filtered_df.iloc[0]
 
@@ -459,8 +462,36 @@ def update_kpi_funnel(selected_query, selected_date, data):
             html.Div(purchases_kpi, style={'width': '100%'})  
         ], style={'width': '33%', 'padding': '10px'}),
     ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'stretch', 'margin': '10px'})
+    
+    # Créer le graphique pour Δ_CTR et Δ_CVR en fonction de Reporting Date
+    delta_chart = go.Figure()
 
-    return kpi_layout, funnel_chart, kpi_section
+    delta_chart.add_trace(go.Scatter(
+       x=df_graph['Reporting Date'],
+       y=df_graph['Δ_CTR'],
+       mode='lines+markers',
+       name='Δ_CTR',
+       line=dict(color='blue')
+       ))
+
+    delta_chart.add_trace(go.Scatter(
+       x=df_graph['Reporting Date'],
+       y=df_graph['Δ_CVR'],
+       mode='lines+markers',
+       name='Δ_CVR',
+       line=dict(color='green')
+   ))
+
+    delta_chart.update_layout(
+       title='Δ_CTR & Δ_CVR evolutions',
+       xaxis_title='Date',
+       yaxis_title='Δ Value',
+       legend=dict(x=0, y=1),
+       margin=dict(l=0, r=0, t=30, b=0),
+       height=400
+   )
+
+    return kpi_layout, funnel_chart, kpi_section, delta_chart
 
 
 # Lancer l'application
