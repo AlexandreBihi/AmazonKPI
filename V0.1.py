@@ -5,8 +5,8 @@ import pandas as pd
 import io
 import base64
 import plotly.graph_objects as go
-import webbrowser
-from time import sleep
+#import webbrowser
+#from time import sleep
 
 # Créer l'application Dash avec un thème Bootstrap
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
@@ -479,6 +479,6 @@ def update_kpi_funnel(selected_query, start_date, end_date, data):
 
 # Lancer l'application
 if __name__ == '__main__':
-    sleep(4)
-    open_browser()
+    #sleep(4)
+    #open_browser()
     app.run_server(debug=True)
