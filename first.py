@@ -40,13 +40,7 @@ app.layout = dbc.Container([
         dcc.Tab(label="Focus on a Keyword", children=[
             html.H2("Focus on a Keyword"),
             dcc.Dropdown(id='query-dropdown', options=[], placeholder="Choisissez une Search Query"),
-            dcc.DatePickerRange(
-                id='date-picker-range',
-                start_date_placeholder_text="Start Date",
-                end_date_placeholder_text="End Date",
-                display_format='YYYY-MM-DD',
-                style={'margin-top': '20px', 'margin-bottom': '20px'}
-            ),
+            dcc.Dropdown(id='date-dropdown', options=[], placeholder="Choisissez une Reporting Date", style={'margin-top': '20px', 'margin-bottom': '20px'}),
             html.Div(id='kpi-display', style={'display': 'flex', 'justify-content': 'space-around', 'margin-bottom': '20px'}),
             dcc.Graph(id='funnel-chart'),
             html.Div(id='clicks_kpi', style={'display': 'flex', 'justify-content': 'flex-start', 'margin-bottom': '20px'}),
@@ -60,12 +54,13 @@ app.layout = dbc.Container([
 @app.callback(
     [Output('output-data-upload', 'children'),
      Output('stored-data', 'data'),
-     Output('query-dropdown', 'options')],
+     Output('query-dropdown', 'options'),
+     Output('date-dropdown', 'options')],
     Input('upload-data', 'contents')
 )
 def update_table(contents):
     if contents is None:
-        return None, None, []
+        return None, None, [], []
 
     dfs = []  # Liste pour stocker les DataFrames lus à partir de chaque fichier
 
@@ -101,8 +96,11 @@ def update_table(contents):
     # Mettre à jour les options du dropdown pour la Search Query
     dropdown_options = [{'label': query, 'value': query} for query in combined_df['Search Query'].unique()]
 
+    # Mettre à jour les options du dropdown pour les dates
+    date_options = [{'label': date.strftime('%Y-%m-%d'), 'value': date.strftime('%Y-%m-%d')} for date in combined_df['Reporting Date'].unique()]
+
     # Stocker le dataframe combiné sous forme de dictionnaire
-    return table, combined_df.to_dict('records'), dropdown_options
+    return table, combined_df.to_dict('records'), dropdown_options, date_options
 
 
 # Callback pour mettre à jour les KPIs, le graphique et les statistiques sur les clics
@@ -111,37 +109,24 @@ def update_table(contents):
      Output('funnel-chart', 'figure'),
      Output('kpi_section', 'children')],
     [Input('query-dropdown', 'value'),
-     Input('date-picker-range', 'start_date'),
-     Input('date-picker-range', 'end_date'),
+     Input('date-dropdown', 'value'),
      Input('stored-data', 'data')]
 )
-def update_kpi_funnel(selected_query, start_date, end_date, data):
-    if selected_query is None or data is None:
+def update_kpi_funnel(selected_query, selected_date, data):
+    if selected_query is None or selected_date is None or data is None:
         return None, go.Figure(), None
 
     df = pd.DataFrame(data)
 
-    # Filtrer les données en fonction de la Search Query sélectionnée
-    filtered_df = df[df['Search Query'] == selected_query]
-
-    # S'assurer que la colonne "Reporting Date" est au format datetime
-    filtered_df['Reporting Date'] = pd.to_datetime(filtered_df['Reporting Date'], errors='coerce')
-
-    # Filtrer les données par la plage de dates sélectionnée
-    if start_date is not None:
-        filtered_df = filtered_df[filtered_df['Reporting Date'] >= pd.to_datetime(start_date)]
-    if end_date is not None:
-        filtered_df = filtered_df[filtered_df['Reporting Date'] <= pd.to_datetime(end_date)]
+    # Filtrer les données en fonction de la Search Query sélectionnée et de la date
+    df['Reporting Date'] = pd.to_datetime(df['Reporting Date'], errors='coerce')
+    filtered_df = df[(df['Search Query'] == selected_query) & (df['Reporting Date'] == pd.to_datetime(selected_date))]
 
     # Si le DataFrame filtré est vide, retourner une valeur par défaut
     if filtered_df.empty:
         return None, go.Figure(), None
 
     filtered_df = filtered_df.iloc[0]
-    
-    # Vu que j'ai la flemme de recalculer les donnees une par une on fait un dataframe qui contient toutes les statistiques dont on aura besoin:
-    
-    
 
     # Définir les KPIs avec les icônes et le style modifié
     kpi_layout = [
@@ -187,7 +172,7 @@ def update_kpi_funnel(selected_query, start_date, end_date, data):
                     'font-size': '24px', 'color': 'green', 'text-align': 'center',
                     'border': '2px solid green', 'padding': '10px', 'border-radius': '5px'}),
             ])
-            
+
         ], style={'display': 'inline-block', 'width': '24%', 'margin': '10px'}),
 
         html.Div([
@@ -210,7 +195,7 @@ def update_kpi_funnel(selected_query, start_date, end_date, data):
                     'font-size': '24px', 'color': 'green', 'text-align': 'center',
                     'border': '2px solid green', 'padding': '10px', 'border-radius': '5px'}),
             ])
-            
+
         ], style={'display': 'inline-block', 'width': '24%', 'margin': '10px'}),
 
         html.Div([
@@ -233,7 +218,7 @@ def update_kpi_funnel(selected_query, start_date, end_date, data):
                     'font-size': '24px', 'color': 'green', 'text-align': 'center',
                     'border': '2px solid green', 'padding': '10px', 'border-radius': '5px'}),
             ])
-            
+
         ], style={'display': 'inline-block', 'width': '24%', 'margin': '10px'}),
     ]
 
