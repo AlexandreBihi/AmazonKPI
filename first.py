@@ -80,12 +80,12 @@ def update_table(contents):
     combined_df = pd.concat(dfs, ignore_index=True)
 
     # Calculer les variables supplémentaires sur le DataFrame combiné
-    combined_df['Market_CTR'] = combined_df["Impressions: Total Count"] / combined_df["Clicks: Total Count"]
-    combined_df["Brand_CTR"] = combined_df["Impressions: Brand Count"] / combined_df["Clicks: Brand Count"]
+    combined_df['Market_CTR'] = combined_df["Clicks: Total Count"] / combined_df["Impressions: Total Count"] 
+    combined_df["Brand_CTR"] = combined_df["Clicks: Brand Count"] / combined_df["Impressions: Brand Count"]  
     combined_df["Δ_CTR"] = combined_df["Brand_CTR"] - combined_df["Market_CTR"]
 
-    combined_df['Market_CVR'] = combined_df["Clicks: Total Count"] / combined_df["Purchases: Total Count"]
-    combined_df["Brand_CVR"] = combined_df["Clicks: Brand Count"] / combined_df["Purchases: Brand Count"]
+    combined_df['Market_CVR'] = combined_df["Purchases: Total Count"] / combined_df["Clicks: Total Count"] / 
+    combined_df["Brand_CVR"] = combined_df["Purchases: Brand Count"] / combined_df["Clicks: Brand Count"] / 
     combined_df["Δ_CVR"] = combined_df["Brand_CVR"] - combined_df["Market_CVR"]
 
     combined_df['strategy'] = combined_df.apply(define_strategy, axis=1)
